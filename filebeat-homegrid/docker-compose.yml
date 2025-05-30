@@ -1,0 +1,33 @@
+services:
+  filebeat:
+    image: docker.elastic.co/beats/filebeat:8.13.4
+    container_name: filebeat-siem
+    user: root
+    restart: unless-stopped
+    volumes:
+      - ./filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+      - ./filebeat/modules.d:/usr/share/filebeat/modules.d:ro
+      - ./certs:/etc/filebeat/certs:ro
+      - /var/log:/var/log:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - ./logs:/usr/share/filebeat/logs
+      - filebeat_data:/usr/share/filebeat/data
+    network_mode: 
+      - "host"
+    environment:
+      - SIEM_SERVER=${SIEM_SERVER}
+      - SIEM_PORT=${SIEM_PORT}
+      - ENVIRONMENT=${ENVIRONMENT:-production}
+      - DATACENTER=${DATACENTER:-dc1}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+
+volumes:
+  filebeat_data:
+    driver: local

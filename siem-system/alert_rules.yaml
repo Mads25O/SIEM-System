@@ -1,0 +1,46 @@
+rules:
+  failed_login_attempts:
+    name: "Failed Login Attempts"
+    description: "Multiple failed authentication attempts detected"
+    enabled: true
+    interval: "1m"
+    lookback: "5m"
+    threshold: 5
+    severity_thresholds:
+      medium: 5
+      high: 15
+      critical: 30
+    query:
+      indices: ["remote-logs-*"]
+      conditions:
+        must:
+          - range:
+              "@timestamp":
+                gte: "now-5m"
+        should:
+          - match:
+              "event.outcome": "failure"
+          - wildcard:
+              "message": "*failed*login*"
+          - wildcard:
+              "message": "*authentication*failure*"
+          - wildcard:
+              "message": "*login*failed*"
+          - wildcard:
+              "message": "*authentication*failed*"
+          - match:
+              "event.category": "authentication"
+        minimum_should_match: 1
+    aggregations:
+      failed_by_user:
+        terms:
+          field: "user.name.keyword"
+          size: 50
+      failed_by_ip:
+        terms:
+          field: "source.ip"
+          size: 50
+    alert_fields:
+      - "affected_users"
+      - "source_ips"
+      - "event_count"

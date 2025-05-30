@@ -1,0 +1,18 @@
+#
+# ** THIS IS AN AUTO-GENERATED FILE **
+#
+
+# Default Kibana configuration for docker target
+server.host: "0.0.0.0"
+server.shutdownTimeout: "5s"
+elasticsearch.hosts: [ "http://elasticsearch:9200" ]
+monitoring.ui.container.elasticsearch.enabled: true
+
+server.publicBaseUrl: "https://gridguard.site"
+server.ssl.enabled: false
+elasticsearch.ssl.verificationMode: none
+xpack.security.enabled: true
+xpack.security.setup.enable: false
+xpack.security.secureCookies: true
+xpack.security.encryptionKey: "gkGP9mAGrGzd5S3sUkcKVnT7FYg7mtR3"
+elasticsearch.serviceAccountToken: "AAEAAWVsYXN0aWMva2liYW5hL2tpYmFuYS1zZXJ2aWNlLXRva2VuOmY5S25wc3ZvVEZDVWVLb3hfM1Exa3c"

@@ -1,0 +1,95 @@
+# Global settings
+name: "${HOSTNAME}-filebeat"
+tags: ["${ENVIRONMENT:-production}", "${DATACENTER:-dc1}"]
+
+filebeat.inputs:
+
+# System logs
+- type: log
+  enabled: true
+  paths:
+    - /var/log/syslog
+    - /var/log/messages
+    - /var/log/kern.log
+  exclude_lines: ['^$', '^#']
+  fields:
+    log_type: syslog
+    environment: "${ENVIRONMENT:-production}"
+    datacenter: "${DATACENTER:-dc1}"
+    criticality: medium
+  fields_under_root: false
+  
+# Authentication logs
+- type: log
+  enabled: true
+  paths:
+    - /var/log/auth.log
+    - /var/log/secure
+  fields:
+    log_type: auth
+    environment: "${ENVIRONMENT:-production}"
+    datacenter: "${DATACENTER:-dc1}"
+    criticality: high
+  fields_under_root: false
+
+# Docker container logs
+- type: container
+  enabled: true
+  paths:
+    - '/var/lib/docker/containers/*/*.log'
+  fields:
+    log_type: docker
+    environment: "${ENVIRONMENT:-production}"
+    datacenter: "${DATACENTER:-dc1}"
+    criticality: medium
+  fields_under_root: false
+
+filebeat.config.modules:
+  path: ${path.config}/modules.d/*.yml
+  reload.enabled: true
+  reload.period: 10s
+
+# Output to Logstash (SIEM)
+output.logstash:
+  hosts: ["${SIEM_SERVER}:${SIEM_PORT}"]
+  
+  # SSL/TLS configuration
+  ssl.enabled: true
+  ssl.certificate_authorities: ["/etc/filebeat/certs/ca.crt"]
+  ssl.certificate: "/etc/filebeat/certs/filebeat.crt"
+  ssl.key: "/etc/filebeat/certs/filebeat.key"
+  ssl.verification_mode: none
+  
+  timeout: 15s
+  max_retries: 3
+  backoff.init: 1s
+  backoff.max: 60s
+
+processors:
+  - add_host_metadata:
+      when.not.contains.tags: forwarded
+      netinfo.enabled: true
+      cache.ttl: 5m
+      geo.name: "${DATACENTER:-dc1}" 
+  
+  - add_docker_metadata:
+      host: "unix:///var/run/docker.sock"
+      match_fields: ["container.id"]
+      
+  # Drop empty events
+  - drop_event:
+      when:
+        equals:
+          message: ""
+
+logging.level: "${LOG_LEVEL:-info}"
+logging.to_files: true
+logging.files:
+  path: /usr/share/filebeat/logs
+  name: filebeat
+  keepfiles: 7
+  permissions: 0644
+
+setup.template.enabled: false
+setup.ilm.enabled: false
+
